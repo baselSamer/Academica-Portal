@@ -1,5 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { useGlobalContext } from './globalContext'
+import { lazy, Suspense } from 'react'
+
+// ── Always-eager: tiny layout shells & auth ──────────────────────────────────
 import PortalLayout from './pages/portal/PortalLayout.tsx'
 import AuthLayout from './pages/auth/AuthLayout.tsx'
 import LoginPage from './pages/auth/LoginPage.tsx'
@@ -7,49 +10,60 @@ import SignupPage from './pages/auth/SignupPage.tsx'
 import PendingVerificationPage from './pages/auth/PendingVerificationPage.tsx'
 import ForgotPassword from './pages/auth/ForgotPassword/ForgotPassword.tsx'
 import ProtectedRoute from './components/ProtectedRoute.tsx'
-
-// Portal Sub-Sections
-import DashboardLayout from './pages/portal/dashboard/DashboardLayout.tsx'
-import DashboardPage from './pages/portal/dashboard/DashboardPage.tsx'
-import SearchHubPage from './pages/portal/explorer/SearchHubPage.tsx'
-import InstructorProfileViewPage from './pages/portal/explorer/InstructorProfileViewPage.tsx'
-import AdminLayout from './pages/portal/admin/AdminLayout.tsx'
-import AdminPage from './pages/portal/admin/AdminPage.tsx'
-import UserDirectoryPage from './pages/portal/admin/users/UserDirectoryPage.tsx'
-import CourseDirectoryPage from './pages/portal/admin/courses/CourseDirectoryPage.tsx'
-import EmployerVerificationPage from './pages/portal/admin/verification/EmployerVerificationPage.tsx'
-import ContentModerationPage from './pages/portal/admin/moderation/ContentModerationPage.tsx'
 import ErrorPage from './pages/error/ErrorPage.tsx'
-
-// Employer Sub-Sections
+import DashboardLayout from './pages/portal/dashboard/DashboardLayout.tsx'
 import EmployerLayout from './pages/portal/employer/EmployerLayout.tsx'
-import EmployerDashboardPage from './pages/portal/employer/dashboard/EmployerDashboardPage.tsx'
-import CompanyProfilePage from './pages/portal/employer/profile/CompanyProfilePage.tsx'
-import InternshipManagementPage from './pages/portal/employer/internships/InternshipManagementPage.tsx'
-import ApplicantReviewPage from './pages/portal/employer/applicants/ApplicantReviewPage.tsx'
-
-// Instructor Sub-Sections
 import InstructorLayout from './pages/portal/instructor/InstructorLayout.tsx'
-import InstructorProfilePage from './pages/portal/instructor/profile/InstructorProfilePage.tsx'
-import MyCourses from './pages/portal/instructor/courses/MyCourses.tsx'
-import ProjectOversightPage from './pages/portal/instructor/oversight/ProjectOversightPage.tsx'
+import AdminLayout from './pages/portal/admin/AdminLayout.tsx'
 
-// Student Sub-Sections
-import InternshipExplorerPage from './pages/portal/student/internships/InternshipExplorerPage.tsx'
-import MyProjectsPage from './pages/portal/student/projects/MyProjectsPage.tsx'
-import ProjectEditorPage from './pages/portal/student/projects/ProjectEditorPage.tsx'
-import ProjectTasksPage from './pages/portal/student/projects/ProjectTasksPage.tsx'
-import StudentPortfolioPage from './pages/portal/student/portfolio/StudentPortfolioPage.tsx'
-import ProjectCollaboration from './pages/portal/student/projects/ProjectCollaboration.tsx'
-import ProjectInvitationsPage from './pages/portal/student/invitations/ProjectInvitationsPage.tsx'
-import NotificationCenter from './pages/portal/shared/notifications/NotificationCenter.tsx'
+// ── Lazy page chunks ──────────────────────────────────────────────────────────
+const DashboardPage            = lazy(() => import('./pages/portal/dashboard/DashboardPage.tsx'))
+const SearchHubPage            = lazy(() => import('./pages/portal/explorer/SearchHubPage.tsx'))
+const InstructorProfileViewPage = lazy(() => import('./pages/portal/explorer/InstructorProfileViewPage.tsx'))
+const AdminPage                = lazy(() => import('./pages/portal/admin/AdminPage.tsx'))
+const UserDirectoryPage        = lazy(() => import('./pages/portal/admin/users/UserDirectoryPage.tsx'))
+const CourseDirectoryPage      = lazy(() => import('./pages/portal/admin/courses/CourseDirectoryPage.tsx'))
+const EmployerVerificationPage = lazy(() => import('./pages/portal/admin/verification/EmployerVerificationPage.tsx'))
+const ContentModerationPage    = lazy(() => import('./pages/portal/admin/moderation/ContentModerationPage.tsx'))
 
-// Shared Pages
-import FavoritesPage from './pages/portal/shared/favorites/FavoritesPage.tsx'
-import CommunicationsPage from './pages/portal/shared/communications/CommunicationsPage.tsx'
-import ProjectDetailsPage from './pages/portal/shared/projects/ProjectDetailsPage.tsx'
+const EmployerDashboardPage    = lazy(() => import('./pages/portal/employer/dashboard/EmployerDashboardPage.tsx'))
+const CompanyProfilePage       = lazy(() => import('./pages/portal/employer/profile/CompanyProfilePage.tsx'))
+const InternshipManagementPage = lazy(() => import('./pages/portal/employer/internships/InternshipManagementPage.tsx'))
+const ApplicantReviewPage      = lazy(() => import('./pages/portal/employer/applicants/ApplicantReviewPage.tsx'))
 
-// Role Switcher Component
+const InstructorProfilePage    = lazy(() => import('./pages/portal/instructor/profile/InstructorProfilePage.tsx'))
+const MyCourses                = lazy(() => import('./pages/portal/instructor/courses/MyCourses.tsx'))
+const ProjectOversightPage     = lazy(() => import('./pages/portal/instructor/oversight/ProjectOversightPage.tsx'))
+
+const InternshipExplorerPage   = lazy(() => import('./pages/portal/student/internships/InternshipExplorerPage.tsx'))
+const MyProjectsPage           = lazy(() => import('./pages/portal/student/projects/MyProjectsPage.tsx'))
+const ProjectEditorPage        = lazy(() => import('./pages/portal/student/projects/ProjectEditorPage.tsx'))
+const ProjectTasksPage         = lazy(() => import('./pages/portal/student/projects/ProjectTasksPage.tsx'))
+const StudentPortfolioPage     = lazy(() => import('./pages/portal/student/portfolio/StudentPortfolioPage.tsx'))
+const ProjectCollaboration     = lazy(() => import('./pages/portal/student/projects/ProjectCollaboration.tsx'))
+const ProjectInvitationsPage   = lazy(() => import('./pages/portal/student/invitations/ProjectInvitationsPage.tsx'))
+const NotificationCenter       = lazy(() => import('./pages/portal/shared/notifications/NotificationCenter.tsx'))
+
+const FavoritesPage            = lazy(() => import('./pages/portal/shared/favorites/FavoritesPage.tsx'))
+const CommunicationsPage       = lazy(() => import('./pages/portal/shared/communications/CommunicationsPage.tsx'))
+const ProjectDetailsPage       = lazy(() => import('./pages/portal/shared/projects/ProjectDetailsPage.tsx'))
+
+// ── Fallback spinner shown while a chunk loads ────────────────────────────────
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <span className="material-symbols-outlined" style={{ fontSize: 40, animation: 'spin 1s linear infinite', color: 'var(--color-primary, #6750A4)' }}>
+        progress_activity
+      </span>
+    </div>
+  )
+}
+
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+}
+
+// ── Role switcher ─────────────────────────────────────────────────────────────
 function RoleSwitcher() {
   const { user, isLoggedIn } = useGlobalContext()
 
@@ -104,72 +118,72 @@ export const router = createBrowserRouter([
         path: 'student',
         element: <DashboardLayout />,
         children: [
-          { index: true, element: <DashboardPage /> },
-          { path: 'projects', element: <MyProjectsPage /> },
-          { path: 'projects/:id', element: <ProjectEditorPage /> },
-          { path: 'projects/new', element: <ProjectEditorPage /> },
-          { path: 'search', element: <SearchHubPage /> },
-          { path: 'instructors/:id', element: <InstructorProfileViewPage /> },
-          { path: 'internships', element: <InternshipExplorerPage /> },
-          { path: 'portfolio', element: <StudentPortfolioPage /> },
-          { path: 'portfolio/:id', element: <StudentPortfolioPage /> },
-          { path: 'favorites', element: <FavoritesPage /> },
-          { path: 'communications', element: <CommunicationsPage /> },
-          { path: 'projects/:id/collaboration', element: <ProjectCollaboration /> },
-          { path: 'projects/:id/tasks', element: <ProjectTasksPage /> },
-          { path: 'invitations', element: <ProjectInvitationsPage /> },
-                    { path: 'notifications', element: <NotificationCenter /> },
-          { path: 'projects/:id/view', element: <ProjectDetailsPage /> }
+          { index: true,                          element: <Lazy><DashboardPage /></Lazy> },
+          { path: 'projects',                     element: <Lazy><MyProjectsPage /></Lazy> },
+          { path: 'projects/:id',                 element: <Lazy><ProjectEditorPage /></Lazy> },
+          { path: 'projects/new',                 element: <Lazy><ProjectEditorPage /></Lazy> },
+          { path: 'search',                       element: <Lazy><SearchHubPage /></Lazy> },
+          { path: 'instructors/:id',              element: <Lazy><InstructorProfileViewPage /></Lazy> },
+          { path: 'internships',                  element: <Lazy><InternshipExplorerPage /></Lazy> },
+          { path: 'portfolio',                    element: <Lazy><StudentPortfolioPage /></Lazy> },
+          { path: 'portfolio/:id',                element: <Lazy><StudentPortfolioPage /></Lazy> },
+          { path: 'favorites',                    element: <Lazy><FavoritesPage /></Lazy> },
+          { path: 'communications',               element: <Lazy><CommunicationsPage /></Lazy> },
+          { path: 'projects/:id/collaboration',   element: <Lazy><ProjectCollaboration /></Lazy> },
+          { path: 'projects/:id/tasks',           element: <Lazy><ProjectTasksPage /></Lazy> },
+          { path: 'invitations',                  element: <Lazy><ProjectInvitationsPage /></Lazy> },
+          { path: 'notifications',                element: <Lazy><NotificationCenter /></Lazy> },
+          { path: 'projects/:id/view',            element: <Lazy><ProjectDetailsPage /></Lazy> }
         ]
       },
       {
         path: 'employer',
         element: <EmployerLayout />,
         children: [
-          { index: true, element: <EmployerDashboardPage /> },
-          { path: 'profile', element: <CompanyProfilePage /> },
-          { path: 'internships', element: <InternshipManagementPage /> },
-          { path: 'internships/:id/applicants', element: <ApplicantReviewPage /> },
-          { path: 'search', element: <SearchHubPage /> },
-          { path: 'instructors/:id', element: <InstructorProfileViewPage /> },
-          { path: 'portfolio/:id', element: <StudentPortfolioPage /> },
-          { path: 'favorites', element: <FavoritesPage /> },
-          { path: 'communications', element: <CommunicationsPage /> },
-                    { path: 'notifications', element: <NotificationCenter /> },
-          { path: 'projects/:id/view', element: <ProjectDetailsPage /> }
+          { index: true,                          element: <Lazy><EmployerDashboardPage /></Lazy> },
+          { path: 'profile',                      element: <Lazy><CompanyProfilePage /></Lazy> },
+          { path: 'internships',                  element: <Lazy><InternshipManagementPage /></Lazy> },
+          { path: 'internships/:id/applicants',   element: <Lazy><ApplicantReviewPage /></Lazy> },
+          { path: 'search',                       element: <Lazy><SearchHubPage /></Lazy> },
+          { path: 'instructors/:id',              element: <Lazy><InstructorProfileViewPage /></Lazy> },
+          { path: 'portfolio/:id',                element: <Lazy><StudentPortfolioPage /></Lazy> },
+          { path: 'favorites',                    element: <Lazy><FavoritesPage /></Lazy> },
+          { path: 'communications',               element: <Lazy><CommunicationsPage /></Lazy> },
+          { path: 'notifications',                element: <Lazy><NotificationCenter /></Lazy> },
+          { path: 'projects/:id/view',            element: <Lazy><ProjectDetailsPage /></Lazy> }
         ]
       },
       {
         path: 'instructor',
         element: <InstructorLayout />,
         children: [
-          { index: true, element: <InstructorProfilePage /> },
-          { path: 'profile', element: <InstructorProfilePage /> },
-          { path: 'courses', element: <MyCourses /> },
-          { path: 'search', element: <SearchHubPage /> },
-          { path: 'instructors/:id', element: <InstructorProfileViewPage /> },
-          { path: 'portfolio/:id', element: <StudentPortfolioPage /> },
-          { path: 'communications', element: <CommunicationsPage /> },
-          { path: 'notifications', element: <NotificationCenter /> },
-          { path: 'projects/:id/view', element: <ProjectDetailsPage /> },
-          { path: 'projects/:id/collaboration', element: <ProjectCollaboration /> },
-          { path: 'invitations', element: <ProjectInvitationsPage /> },
-          { path: 'oversight', element: <ProjectOversightPage /> }
-      ]
+          { index: true,                          element: <Lazy><InstructorProfilePage /></Lazy> },
+          { path: 'profile',                      element: <Lazy><InstructorProfilePage /></Lazy> },
+          { path: 'courses',                      element: <Lazy><MyCourses /></Lazy> },
+          { path: 'search',                       element: <Lazy><SearchHubPage /></Lazy> },
+          { path: 'instructors/:id',              element: <Lazy><InstructorProfileViewPage /></Lazy> },
+          { path: 'portfolio/:id',                element: <Lazy><StudentPortfolioPage /></Lazy> },
+          { path: 'communications',               element: <Lazy><CommunicationsPage /></Lazy> },
+          { path: 'notifications',                element: <Lazy><NotificationCenter /></Lazy> },
+          { path: 'projects/:id/view',            element: <Lazy><ProjectDetailsPage /></Lazy> },
+          { path: 'projects/:id/collaboration',   element: <Lazy><ProjectCollaboration /></Lazy> },
+          { path: 'invitations',                  element: <Lazy><ProjectInvitationsPage /></Lazy> },
+          { path: 'oversight',                    element: <Lazy><ProjectOversightPage /></Lazy> }
+        ]
       },
       {
         path: 'administrator',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <AdminPage /> },
-          { path: 'verification', element: <EmployerVerificationPage /> },
-          { path: 'users', element: <UserDirectoryPage /> },
-          { path: 'courses', element: <CourseDirectoryPage /> },
-          { path: 'moderation', element: <ContentModerationPage /> },
-          { path: 'search', element: <SearchHubPage /> },
-          { path: 'instructors/:id', element: <InstructorProfileViewPage /> },
-                    { path: 'notifications', element: <NotificationCenter /> },
-          { path: 'projects/:id/view', element: <ProjectDetailsPage /> }
+          { index: true,                          element: <Lazy><AdminPage /></Lazy> },
+          { path: 'verification',                 element: <Lazy><EmployerVerificationPage /></Lazy> },
+          { path: 'users',                        element: <Lazy><UserDirectoryPage /></Lazy> },
+          { path: 'courses',                      element: <Lazy><CourseDirectoryPage /></Lazy> },
+          { path: 'moderation',                   element: <Lazy><ContentModerationPage /></Lazy> },
+          { path: 'search',                       element: <Lazy><SearchHubPage /></Lazy> },
+          { path: 'instructors/:id',              element: <Lazy><InstructorProfileViewPage /></Lazy> },
+          { path: 'notifications',                element: <Lazy><NotificationCenter /></Lazy> },
+          { path: 'projects/:id/view',            element: <Lazy><ProjectDetailsPage /></Lazy> }
         ]
       },
     ]
