@@ -1,5 +1,4 @@
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGlobalContext } from '../../../../globalContext';
 import ProjectEditor from './components/ProjectEditor';
 
@@ -10,52 +9,29 @@ import ProjectEditor from './components/ProjectEditor';
 export default function ProjectEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useGlobalContext();
 
-  const [backLabel, setBackLabel] = useState('← Back to Projects');
+  const isNew = !id || id === 'new';
 
-  useEffect(() => {
-    const stored = localStorage.getItem('polaris_back_origin');
-    if (stored) {
-      if (stored.includes('/student/projects/')) {
-        const originProject = stored.split('/').pop();
-        setBackLabel(`← Back to ${originProject === id ? 'Project' : 'Other Projects'}`);
-      }
-    } else {
-      localStorage.setItem('polaris_back_origin', location.pathname);
-    }
-  }, [id, location.pathname]);
-
-  const handleSave = () => {
-    navigate('/portal/student/projects');
-  };
-
-  const handleCancel = () => {
-    const stored = localStorage.getItem('polaris_back_origin');
-    if (stored && stored.includes('/student/projects/') && !stored.includes('/collaboration') && !stored.includes('/tasks') && !stored.includes('/settings')) {
-      navigate(stored);
-    } else {
-      navigate('/portal/student/projects');
-    }
-  };
+  // Both the header "Back" button and the editor's Cancel button navigate here.
+  const goBack = () => navigate('/portal/student/projects');
 
   return (
     <div className="min-h-screen bg-background p-[--spacing-polaris-md] md:p-[--spacing-polaris-lg]">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <button
-            onClick={handleCancel}
+            onClick={goBack}
             className="text-sm font-jakarta font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-2"
           >
-            {backLabel}
+            ← {isNew ? 'Back to Projects' : 'Back to My Projects'}
           </button>
         </div>
         <ProjectEditor
-          projectId={id === 'new' ? undefined : id}
+          projectId={isNew ? undefined : id}
           currentUserId={user?.username}
-          onSave={handleSave}
-          onCancel={handleCancel}
+          onSave={goBack}
+          onCancel={goBack}
         />
       </div>
     </div>
