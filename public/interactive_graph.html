@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Polaris - Unified Management Console</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --primary: #2f3640;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f5f6fa;
+            --panel: #ffffff;
+            --text: #2f3640;
+            --text-light: #7f8c8d;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: var(--bg); color: var(--text); overflow: hidden; }
+        
+        #header { background: var(--primary); color: white; padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #header h1 { margin: 0; font-size: 1.25rem; letter-spacing: 1px; }
+
+        #main { display: flex; flex: 1; overflow: hidden; }
+        
+        #left-panel { width: 300px; display: flex; flex-direction: column; border-right: 1px solid #dcdde1; background: var(--panel); padding: 1rem; overflow-y: auto; }
+        #content-area { flex: 1; display: flex; flex-direction: column; background: white; position: relative; }
+        #mynetwork { flex: 1; width: 100%; height: 100%; }
+        #progression-view { display: none; padding: 2rem; overflow-y: auto; flex: 1; }
+        #right-panel { width: 380px; display: flex; flex-direction: column; border-left: 1px solid #dcdde1; background: var(--panel); padding: 1rem; }
+
+        .section { margin-bottom: 1.5rem; }
+        .section h3 { margin: 0 0 0.75rem 0; font-size: 0.9rem; text-transform: uppercase; color: var(--text-light); border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+
+        .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        select, input { padding: 0.6rem; border: 1px solid #dcdde1; border-radius: 6px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+        
+        #req-list { flex: 1; overflow-y: auto; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .req-card { padding: 0.75rem; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: all 0.2s; position: relative; background: #fff; }
+        .req-card:hover { border-color: var(--accent); background: #f0f7ff; }
+        .req-card.done { border-left: 4px solid var(--success); opacity: 0.7; background: #f9f9f9; }
+        .req-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
+        .req-card h4 { margin: 0 0 0.25rem 0; font-size: 0.9rem; }
+        .req-card p { margin: 0; font-size: 0.8rem; color: var(--text-light); line-height: 1.3; }
+        .req-card .meta { margin-top: 0.5rem; display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: bold; }
+
+        .btn { padding: 0.6rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: transform 0.1s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { border: 1px solid #dcdde1; background: white; color: var(--text); }
+        .btn-outline.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        #detail-view { display: none; margin-top: 1rem; padding: 1.25rem; background: #f8f9fa; border-radius: 12px; border: 1px solid #e1e8ed; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .notes-box { margin-top: 1rem; padding: 0.75rem; background: #fffbe6; border-left: 4px solid #ffe58f; border-radius: 4px; font-size: 0.8rem; color: #856404; line-height: 1.4; overflow-wrap: break-word; }
+
+        #progress-container { width: 200px; height: 10px; background: #444; border-radius: 5px; overflow: hidden; position: relative; }
+        #progress-bar { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+        
+        .prog-table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .prog-table th { background: #f8f9fa; padding: 1rem; text-align: left; font-size: 0.85rem; color: var(--text-light); border-bottom: 1px solid #eee; }
+        .prog-table td { padding: 1rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .member-bar-container { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; width: 150px; }
+        .member-bar { height: 100%; background: var(--success); }
+
+        .tab-switcher { display: flex; gap: 0.5rem; margin-bottom: 1rem; padding: 0 1rem; margin-top: 1rem; }
+
+        .expand-btn { cursor: pointer; color: var(--accent); font-weight: bold; padding-right: 10px; transition: transform 0.2s; display: inline-block; }
+        .expand-btn.active { transform: rotate(90deg); }
+        .task-details-row { display: none; background: #fcfcfc; }
+        .task-details-row.active { display: table-row; }
+        .task-list-mini { padding: 0.75rem 2.5rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.5rem; border-bottom: 2px solid #eee; }
+        .mini-task-item { font-size: 0.75rem; display: flex; align-items: flex-start; gap: 8px; color: #555; background: white; padding: 5px; border-radius: 4px; border: 1px solid #f0f0f0; }
+        .mini-task-item.done { border-color: var(--success); background: #fafffb; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>PROJECT POLARIS MANAGEMENT CONSOLE</h1>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="text-align: right;">
+                <div style="font-size: 0.7rem; color: #aaa; margin-bottom: 2px;">STORY POINTS PROGRESS</div>
+                <div id="progress-container"><div id="progress-bar"></div></div>
+            </div>
+            <div id="progress-text" style="font-size: 1.2rem; font-weight: bold; width: 50px;">0%</div>
+        </div>
+    </div>
+
+    <div class="tab-switcher">
+        <button id="btn-graph" class="btn btn-outline active" onclick="switchView('graph')">Network View</button>
+        <button id="btn-prog" class="btn btn-outline" onclick="switchView('prog')">Team Progression</button>
+    </div>
+
+    <div id="main">
+        <div id="left-panel">
+            <div class="section">
+                <h3>Global Filters</h3>
+                <div class="filter-group">
+                    <label style="font-size: 0.8rem; font-weight: bold;">Status</label>
+                    <select id="filter-status" onchange="applyFilters()">
+                        <option value="all">Show All Tasks</option>
+                        <option value="done">Only Completed</option>
+                        <option value="remaining">Only Remaining</option>
+                        <option value="complete_with_next">Show Complete + Next</option>
+                    </select>
+                    
+                    <label style="font-size: 0.8rem; font-weight: bold;">Member</label>
+                    <select id="filter-person" onchange="applyFilters()">
+                        <option value="all">All Members</option>
+                        <option value="Omar">Omar (Lead)</option>
+                        <option value="Basel">Basel</option>
+                        <option value="Yousef">Yousef</option>
+                        <option value="Omar Fo2sh">Omar Fo2sh</option>
+                        <option value="Adham">Adham</option>
+                    </select>
+                    
+                    <label style="font-size: 0.8rem; font-weight: bold;">Module</label>
+                    <select id="filter-module" onchange="applyFilters()">
+                        <option value="all">All Modules</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Employer">Employer</option>
+                        <option value="Student">Student</option>
+                        <option value="Instructor">Instructor</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section" style="margin-top: auto;">
+                <h3>Sync Data</h3>
+                <input type="text" id="sync-code" placeholder="Paste progress code..." style="margin-bottom: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary" style="flex: 1; font-size: 0.7rem;" onclick="copySyncCode()">Copy</button>
+                    <button class="btn btn-primary" style="flex: 1; font-size: 0.7rem;" onclick="loadSyncCode()">Load</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-area">
+            <div id="mynetwork"></div>
+            <div id="progression-view">
+                <h3>Team Performance Breakdown</h3>
+                <table class="prog-table">
+                    <thead>
+                        <tr>
+                            <th>Team Member</th>
+                            <th>Status</th>
+                            <th>Done Points</th>
+                            <th>Total Points</th>
+                            <th>Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prog-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="right-panel">
+            <div class="section" style="margin-bottom: 0;">
+                <h3>Explorer</h3>
+                <input type="text" id="search-box" placeholder="Search description or ID..." onkeyup="applyFilters()">
+            </div>
+            
+            <div id="detail-view">
+                <h4 id="view-id">Req #</h4>
+                <p id="view-desc" style="font-size: 0.85rem; font-weight: 500;"></p>
+                <div id="view-meta" style="font-size: 0.7rem; font-weight: bold; margin-top: 0.5rem; color: var(--accent);"></div>
+                <div id="view-notes" class="notes-box"></div>
+                <button id="toggle-btn" class="btn btn-success" style="margin-top: 1rem; width: 100%;" onclick="toggleCurrent()">Mark Complete</button>
+                <button id="path-btn" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;" onclick="togglePath()">Show Path from Req 1</button>
+            </div>
+
+            <div id="req-list"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let network = null;
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+        let currentSelectedId = null;
+        let doneTasks = new Set(JSON.parse(localStorage.getItem('polaris_done') || '[]'));
+        let pathTargetId = null;
+
+        function togglePath() {
+            if (pathTargetId === currentSelectedId) {
+                pathTargetId = null;
+                document.getElementById('path-btn').innerText = "Show Path from Req 1";
+                document.getElementById('path-btn').className = "btn btn-primary";
+            } else {
+                pathTargetId = currentSelectedId;
+                document.getElementById('path-btn').innerText = "Clear Path View";
+                document.getElementById('path-btn').className = "btn btn-outline active";
+            }
+            applyFilters();
+        }
+
+        function getPathNodes(startId, endId) {
+            let validNodes = new Set();
+            function dfs(currentId, path) {
+                if (currentId === endId) {
+                    path.forEach(id => validNodes.add(id));
+                    return true;
+                }
+                let found = false;
+                const outgoingEdges = graphData.edges.filter(e => e.from === currentId);
+                for (let edge of outgoingEdges) {
+                    if (!path.includes(edge.to)) {
+                        path.push(edge.to);
+                        if (dfs(edge.to, path)) {
+                            found = true;
+                        }
+                        path.pop();
+                    }
+                }
+                return found;
+            }
+            dfs(startId, [startId]);
+            return validNodes;
+        }
+
+        const graphData = {"nodes":[{"id":1,"label":"Req 1","title":"<b>Student/Administrator/ Employer/ Course Instructor</b><br>Login using my email and password/ Log out<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Login using my email and password/ Log out","role":"Student/Administrator/ Employer/ Course Instructor","points":4,"notes":"Student, course instructor and Administrator must log in with their GUC emails. Only the employer will use an external email"},{"id":2,"label":"Req 2","title":"<b>Student/ Course Instructor</b><br>Register (sign up) using my first name, last name, email and password<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar","description":"Register (sign up) using my first name, last name, email and password","role":"Student/ Course Instructor","points":2,"notes":"Admin will NOT REGISTER"},{"id":3,"label":"Req 3","title":"<b>Employer</b><br>Register (sign up) using my company name, company email and password<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Omar","description":"Register (sign up) using my company name, company email and password","role":"Employer","points":2,"notes":"No additional notes."},{"id":4,"label":"Req 4","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Update (change) my forgotten password using an OTP<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Update (change) my forgotten password using an OTP","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":5,"label":"Req 5","title":"<b>Student</b><br>Add/ view/ update/ remove my basic information on my portfolio such as my major, my skills, Linkedin link <br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Add/ view/ update/ remove my basic information on my portfolio such as my major, my skills, Linkedin link ","role":"Student","points":2,"notes":"LinkedIn link here acts as the CV"},{"id":6,"label":"Req 6","title":"<b>Course Instructor</b><br>Add/ view/ update/ remove information on my profile including a short biography, research interests and education background<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#ffeaa7","group":"Instructor","person":"Omar Fo2sh","description":"Add/ view/ update/ remove information on my profile including a short biography, research interests and education background","role":"Course Instructor","points":2,"notes":"No additional notes."},{"id":7,"label":"Req 7","title":"<b>Course Instructor</b><br>Link/unlink myself to the course(s) I am teaching<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#ffeaa7","group":"Instructor","person":"Omar Fo2sh","description":"Link/unlink myself to the course(s) I am teaching","role":"Course Instructor","points":2,"notes":"All course instructors are automatically linked to the \"Bachelor Project\""},{"id":8,"label":"Req 8","title":"<b>Student/Administrator/ Employer/ Course Instructor</b><br>Search for course instructors by name or course<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar Fo2sh","description":"Search for course instructors by name or course","role":"Student/Administrator/ Employer/ Course Instructor","points":4,"notes":"No additional notes."},{"id":9,"label":"Req 9","title":"<b>Student/Administrator/ Employer/ Course Instructor</b><br>Select and view the course instructor profile along with all the details including linked courses<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar Fo2sh","description":"Select and view the course instructor profile along with all the details including linked courses","role":"Student/Administrator/ Employer/ Course Instructor","points":4,"notes":"No additional notes."},{"id":10,"label":"Req 10","title":"<b>Employer</b><br>Add/ view/ update/ remove information about my company such as short company biography, address and contact information<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Add/ view/ update/ remove information about my company such as short company biography, address and contact information","role":"Employer","points":2,"notes":"No additional notes."},{"id":11,"label":"Req 11","title":"<b>Employer</b><br>Choose my company's location on Google Maps and set it as part of my profile<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Choose my company's location on Google Maps and set it as part of my profile","role":"Employer","points":2,"notes":"No additional notes."},{"id":12,"label":"Req 12","title":"<b>Student/ Employer/ Course Instructor</b><br>Upload a profile picture<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Omar","description":"Upload a profile picture","role":"Student/ Employer/ Course Instructor","points":2,"notes":"This should be the company logo for the employer"},{"id":13,"label":"Req 13","title":"<b>Employer</b><br>Upload pdf documents such as tax certificate<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Upload pdf documents such as tax certificate","role":"Employer","points":2,"notes":"This is to verify that the employer belongs to a real company. This is done during resgiteration and MUST be done for the administrator to accept/reject the company"},{"id":14,"label":"Req 14","title":"<b>Administrator</b><br>View a list of employers applying to use the platform<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of employers applying to use the platform","role":"Administrator","points":2,"notes":"No additional notes."},{"id":15,"label":"Req 15","title":"<b>Administrator</b><br>View the details of each employer's company along with the uploaded documents<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View the details of each employer's company along with the uploaded documents","role":"Administrator","points":2,"notes":"No additional notes."},{"id":16,"label":"Req 16","title":"<b>Administrator</b><br>View any uploaded documents<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View any uploaded documents","role":"Administrator","points":2,"notes":"No additional notes."},{"id":17,"label":"Req 17","title":"<b>Administrator</b><br>Download any uploaded documents<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Download any uploaded documents","role":"Administrator","points":2,"notes":"No additional notes."},{"id":18,"label":"Req 18","title":"<b>Administrator</b><br>Accept/ reject companies applying to use the platform<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Accept/ reject companies applying to use the platform","role":"Administrator","points":2,"notes":"No additional notes."},{"id":19,"label":"Req 19","title":"<b>Student</b><br>Create/ view/ update/ delete a  project with project title, course, GitHub link, project report, programming languages used, and a short demo video of the project <br><b>Assigned:</b> Yousef<br><b>Points:</b> 4","color":"#55efc4","group":"Student","person":"Yousef","description":"Create/ view/ update/ delete a  project with project title, course, GitHub link, project report, programming languages used, and a short demo video of the project ","role":"Student","points":4,"notes":"Student should choose the course from a list of courses (this includes Bachelor Project). Project report is not uploaded. Creation date of the project should be saved automatically by the system."},{"id":20,"label":"Req 20","title":"<b>Student</b><br>Set my project's visibility on my portfolio<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar","description":"Set my project's visibility on my portfolio","role":"Student","points":2,"notes":"Project visibility can be private or public (as in others can see the project on your portfolio or not). "},{"id":21,"label":"Req 21","title":"<b>Student</b><br>View a list of all my projects<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"View a list of all my projects","role":"Student","points":2,"notes":"No additional notes."},{"id":22,"label":"Req 22","title":"<b>Student</b><br>Select the projects I want to be visible on my portfolio<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"Select the projects I want to be visible on my portfolio","role":"Student","points":2,"notes":"No additional notes."},{"id":23,"label":"Req 23","title":"<b>Student</b><br>Upload a thesis draft<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"Upload a thesis draft","role":"Student","points":2,"notes":"There can be multiple thesis drafts. This is only required if the course is set to \"Bachelor Project\"."},{"id":24,"label":"Req 24","title":"<b>Student</b><br>Select one of my thesis drafts as the Final Draft<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"Select one of my thesis drafts as the Final Draft","role":"Student","points":2,"notes":"Once a final draft is selected, all other drafts should automatically become private (not visible to anyone else at all - not even the course instructor(s)). Only the final draft will be public and visible to all."},{"id":25,"label":"Req 25","title":"<b>Student</b><br>Search through a list of collaborators and/or course instructor(s) by email or first name or last name<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Search through a list of collaborators and/or course instructor(s) by email or first name or last name","role":"Student","points":2,"notes":"No additional notes."},{"id":26,"label":"Req 26","title":"<b>Student</b><br>Send/ cancel (unsend) an invitation to the chosen collaborators and/or course instructor(s) to join the project<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Send/ cancel (unsend) an invitation to the chosen collaborators and/or course instructor(s) to join the project","role":"Student","points":2,"notes":"Only the course instructor(s) of that porject can be sent invitations"},{"id":27,"label":"Req 27","title":"<b>Student</b><br>View a list of my added collaborators and/or course instructor(s) with the status of their invitation (accepts/rejected/no reply)<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"View a list of my added collaborators and/or course instructor(s) with the status of their invitation (accepts/rejected/no reply)","role":"Student","points":2,"notes":"No additional notes."},{"id":28,"label":"Req 28","title":"<b>Student/ Course Instrcutor</b><br>Receive a notification when project invitations are sent to me<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 4","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Receive a notification when project invitations are sent to me","role":"Student/ Course Instrcutor","points":4,"notes":"No additional notes."},{"id":29,"label":"Req 29","title":"<b>Student/ Course Instrcutor</b><br>View a list of  invitations to different projects<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 4","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"View a list of  invitations to different projects","role":"Student/ Course Instrcutor","points":4,"notes":"No additional notes."},{"id":30,"label":"Req 30","title":"<b>Student/ Course Instrcutor</b><br>Accept/ Reject project invitations<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 4","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Accept/ Reject project invitations","role":"Student/ Course Instrcutor","points":4,"notes":"No additional notes."},{"id":31,"label":"Req 31","title":"<b>Student</b><br>Remove a collaborator from a project<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Remove a collaborator from a project","role":"Student","points":2,"notes":"Only the project creator can do this"},{"id":32,"label":"Req 32","title":"<b>Student</b><br>Create/view/edit/delete a task which needs to be completed for this project along with a short task description (1 line), collaborator assigned to this task and the status of the task (pending, post-poned, completed) and task deadline<br><b>Assigned:</b> Adham<br><b>Points:</b> 4","color":"#55efc4","group":"Student","person":"Adham","description":"Create/view/edit/delete a task which needs to be completed for this project along with a short task description (1 line), collaborator assigned to this task and the status of the task (pending, post-poned, completed) and task deadline","role":"Student","points":4,"notes":"Only the project creator can create/edit these tasks with all their information. Colloaborators can only change the status of their corresponding task. If the project is a bachelor project, there will be no collaborators, only the project creator."},{"id":33,"label":"Req 33","title":"<b>Student</b><br>View a task list of all the tasks for a project along with all the task details entered by the project creator<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"View a task list of all the tasks for a project along with all the task details entered by the project creator","role":"Student","points":2,"notes":"No additional notes."},{"id":34,"label":"Req 34","title":"<b>Student</b><br>Reorder the tasks in the task list according to importance<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"Reorder the tasks in the task list according to importance","role":"Student","points":2,"notes":"Only the project creator can reorder these tasks."},{"id":35,"label":"Req 35","title":"<b>Student/Administrator/ Employer/ Course Instructor</b><br>View a list of all my notifications<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of all my notifications","role":"Student/Administrator/ Employer/ Course Instructor","points":4,"notes":"No additional notes."},{"id":36,"label":"Req 36","title":"<b>Student/Administrator/ Employer/ Course Instructor</b><br>Mark my notifications as read/unread<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Mark my notifications as read/unread","role":"Student/Administrator/ Employer/ Course Instructor","points":4,"notes":"No additional notes."},{"id":37,"label":"Req 37","title":"<b>Course Instructor</b><br>Add/edit/remove a comment or feedback on each task<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 3","color":"#ffeaa7","group":"Instructor","person":"Omar Fo2sh","description":"Add/edit/remove a comment or feedback on each task","role":"Course Instructor","points":3,"notes":"No additional notes."},{"id":38,"label":"Req 38","title":"<b>Course Instructor</b><br>Add/edit/remove a comment or feedback on the project in general<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 3","color":"#ffeaa7","group":"Instructor","person":"Omar Fo2sh","description":"Add/edit/remove a comment or feedback on the project in general","role":"Course Instructor","points":3,"notes":"This includes the individual thesis drafts. "},{"id":39,"label":"Req 39","title":"<b>Course Instructor</b><br>Rate the entire project<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#ffeaa7","group":"Instructor","person":"Omar Fo2sh","description":"Rate the entire project","role":"Course Instructor","points":2,"notes":"Rating is out of 5. This is visible to everyone."},{"id":40,"label":"Req 40","title":"<b>Student</b><br>View the comments left by course instructor(s) on the tasks and/or project in general<br><b>Assigned:</b> Yousef<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Yousef","description":"View the comments left by course instructor(s) on the tasks and/or project in general","role":"Student","points":2,"notes":"These comments are only visible to the project creator, collaborators and any other instructors assigned to the project."},{"id":41,"label":"Req 41","title":"<b>Student</b><br>Receive a notification each time any feedback or comments are made on my project or tasks by the course instructor(s)<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Receive a notification each time any feedback or comments are made on my project or tasks by the course instructor(s)","role":"Student","points":2,"notes":"No additional notes."},{"id":42,"label":"Req 42","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Search for a specific project by project title<br><b>Assigned:</b> Adham<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Adham","description":"Search for a specific project by project title","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":43,"label":"Req 43","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Filter project titles by course or course instructor and/or by project creation date<br><b>Assigned:</b> Adham<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Adham","description":"Filter project titles by course or course instructor and/or by project creation date","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"Course can be a course name or a bachelor project"},{"id":44,"label":"Req 44","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>View a list of project titles based on my search and/or filteration results<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of project titles based on my search and/or filteration results","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":45,"label":"Req 45","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Sort project titles by creation date or rating<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Sort project titles by creation date or rating","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":46,"label":"Req 46","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Select and view the project along with its details<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Select and view the project along with its details","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":47,"label":"Req 47","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Search for a specific portfolio by student name or email<br><b>Assigned:</b> Yousef<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Yousef","description":"Search for a specific portfolio by student name or email","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":48,"label":"Req 48","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Filter portfolios by major or skills<br><b>Assigned:</b> Yousef<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Yousef","description":"Filter portfolios by major or skills","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":49,"label":"Req 49","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>View a list of portfolios based on my search and/or filteration results<br><b>Assigned:</b> Yousef<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Yousef","description":"View a list of portfolios based on my search and/or filteration results","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":50,"label":"Req 50","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Sort portfolios based on number of projects on each portfolio<br><b>Assigned:</b> Adham<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Adham","description":"Sort portfolios based on number of projects on each portfolio","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":51,"label":"Req 51","title":"<b>Student/ Employer/ Course Instructor / Administrator</b><br>Select and view the portfolio along with its details<br><b>Assigned:</b> Yousef<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Yousef","description":"Select and view the portfolio along with its details","role":"Student/ Employer/ Course Instructor / Administrator","points":4,"notes":"No additional notes."},{"id":52,"label":"Req 52","title":"<b>Administrator</b><br>View a list of all users with their full name, email and role<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of all users with their full name, email and role","role":"Administrator","points":2,"notes":"The list should include students, admins, employers and course instructors. You can choose to divide the list by roles."},{"id":53,"label":"Req 53","title":"<b>Administrator</b><br>Create other accounts for other admins using a username and password<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Create other accounts for other admins using a username and password","role":"Administrator","points":2,"notes":"There has to be 1 admin created at the beginning of using the application and that admin can create more admins"},{"id":54,"label":"Req 54","title":"<b>Administrator</b><br>Activate/ deactivate any account<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Activate/ deactivate any account","role":"Administrator","points":2,"notes":"No additional notes."},{"id":55,"label":"Req 55","title":"<b>Administrator</b><br>Create/view/edit/delete a course with its course name and course code<br><b>Assigned:</b> Omar<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Omar","description":"Create/view/edit/delete a course with its course name and course code","role":"Administrator","points":4,"notes":"No additional notes."},{"id":56,"label":"Req 56","title":"<b>Administrator/ Course Instructor</b><br>View a list of all courses included the course name and course code<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of all courses included the course name and course code","role":"Administrator/ Course Instructor","points":2,"notes":"No additional notes."},{"id":57,"label":"Req 57","title":"<b>Administrator</b><br>Accept/ Reject link/ unlink requests from course instructors<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Accept/ Reject link/ unlink requests from course instructors","role":"Administrator","points":2,"notes":"No additional notes."},{"id":58,"label":"Req 58","title":"<b>Administrator</b><br>Receive a notification of any linking/unlinking requests<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Receive a notification of any linking/unlinking requests","role":"Administrator","points":2,"notes":"No additional notes."},{"id":59,"label":"Req 59","title":"<b>Administrator/ Course Instructor</b><br>Flag any inappropriate projects that violate the university rules such as plagiarism<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Flag any inappropriate projects that violate the university rules such as plagiarism","role":"Administrator/ Course Instructor","points":2,"notes":"Flagging will automatically cause the project to be deactivated if no appeal was sent by the student. A reason for the flagging should be included."},{"id":60,"label":"Req 60","title":"<b>Student</b><br>Receive a notification that my project has been flagged along with the reason for flagging<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Receive a notification that my project has been flagged along with the reason for flagging","role":"Student","points":2,"notes":"No additional notes."},{"id":61,"label":"Req 61","title":"<b>Student</b><br>Send an appeal to unflag the project, explaining their point of view<br><b>Assigned:</b> Omar Fo2sh<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Omar Fo2sh","description":"Send an appeal to unflag the project, explaining their point of view","role":"Student","points":2,"notes":"The explaination should be a short message"},{"id":62,"label":"Req 62","title":"<b>Administrator</b><br>View a list of flagged projects<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of flagged projects","role":"Administrator","points":2,"notes":"No additional notes."},{"id":63,"label":"Req 63","title":"<b>Administrator</b><br>View a list of appeals sent by students<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View a list of appeals sent by students","role":"Administrator","points":2,"notes":"No additional notes."},{"id":64,"label":"Req 64","title":"<b>Administrator</b><br>Activate/ deactivate any project<br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"Activate/ deactivate any project","role":"Administrator","points":2,"notes":"No additional notes."},{"id":65,"label":"Req 65","title":"<b>Student/ Employer</b><br>Save/remove projects and portfolios to my favorites list<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Save/remove projects and portfolios to my favorites list","role":"Student/ Employer","points":2,"notes":"No additional notes."},{"id":66,"label":"Req 66","title":"<b>Student/ Employer</b><br>View all of my favorite projects and portfolios on my favorites list<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"View all of my favorite projects and portfolios on my favorites list","role":"Student/ Employer","points":2,"notes":"These can be considered separate lists: one for projects and one for portfolios"},{"id":67,"label":"Req 67","title":"<b>Student/ Employer/ Course Instructor</b><br>View a list of recommended projects<br><b>Assigned:</b> Basel<br><b>Points:</b> 3","color":"#74b9ff","group":"Employer","person":"Basel","description":"View a list of recommended projects","role":"Student/ Employer/ Course Instructor","points":3,"notes":"No additional notes."},{"id":68,"label":"Req 68","title":"<b>Student/ Employer/ Course Instructor</b><br>View a list of all my messages with students, employers and course instructors<br><b>Assigned:</b> Basel<br><b>Points:</b> 3","color":"#74b9ff","group":"Employer","person":"Basel","description":"View a list of all my messages with students, employers and course instructors","role":"Student/ Employer/ Course Instructor","points":3,"notes":"No additional notes."},{"id":69,"label":"Req 69","title":"<b>Student/ Employer/ Course Instructor</b><br>Send and receive private messages<br><b>Assigned:</b> Basel<br><b>Points:</b> 3","color":"#74b9ff","group":"Employer","person":"Basel","description":"Send and receive private messages","role":"Student/ Employer/ Course Instructor","points":3,"notes":"No additional notes."},{"id":70,"label":"Req 70","title":"<b>Student/ Employer/ Course Instructor</b><br>Receive a notification whenever I receive a private message<br><b>Assigned:</b> Basel<br><b>Points:</b> 3","color":"#74b9ff","group":"Employer","person":"Basel","description":"Receive a notification whenever I receive a private message","role":"Student/ Employer/ Course Instructor","points":3,"notes":"No additional notes."},{"id":71,"label":"Req 71","title":"<b>Employer/ Administrator</b><br>View statistics about the number of students that did their internships with my company and the number of internships I have offered over time<br><b>Assigned:</b> Basel<br><b>Points:</b> 4","color":"#ff7675","group":"Admin","person":"Basel","description":"View statistics about the number of students that did their internships with my company and the number of internships I have offered over time","role":"Employer/ Administrator","points":4,"notes":"No additional notes."},{"id":72,"label":"Req 72","title":"<b>Student</b><br>View statistics about the total number of projects I have as well as the programming languages used in my projects overall (as a percentage) and the top collaborators per project (on my projects)<br><b>Assigned:</b> Adham<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Adham","description":"View statistics about the total number of projects I have as well as the programming languages used in my projects overall (as a percentage) and the top collaborators per project (on my projects)","role":"Student","points":2,"notes":"No additional notes."},{"id":73,"label":"Req 73","title":"<b>Administrator</b><br>View statistics about the platform usage including total number of users (employers, students and course instructors),  total number of projects, and total number of courses <br><b>Assigned:</b> Omar<br><b>Points:</b> 2","color":"#ff7675","group":"Admin","person":"Omar","description":"View statistics about the platform usage including total number of users (employers, students and course instructors),  total number of projects, and total number of courses ","role":"Administrator","points":2,"notes":"No additional notes."},{"id":74,"label":"Req 74","title":"<b>Employer</b><br>View/ add/ edit/ delete an internship with details such as internship title, internship details (responsibilities), skills, duration, application deadline and programming languages to be used<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"View/ add/ edit/ delete an internship with details such as internship title, internship details (responsibilities), skills, duration, application deadline and programming languages to be used","role":"Employer","points":2,"notes":"No additional notes."},{"id":75,"label":"Req 75","title":"<b>Employer</b><br>sort student applications by top contributors <br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"sort student applications by top contributors ","role":"Employer","points":2,"notes":"No additional notes."},{"id":76,"label":"Req 76","title":"<b>Employer</b><br>view a list of top suggested applications based on my portfolios favorite list<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"view a list of top suggested applications based on my portfolios favorite list","role":"Employer","points":2,"notes":"No additional notes."},{"id":77,"label":"Req 77","title":"<b>Employer</b><br>Set an internship as currently hiring, or position filled<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Set an internship as currently hiring, or position filled","role":"Employer","points":2,"notes":"No additional notes."},{"id":78,"label":"Req 78","title":"<b>Employer</b><br>Archive/ unarchive internships<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Archive/ unarchive internships","role":"Employer","points":2,"notes":"Internships can only be archived if their application deadline is passed"},{"id":79,"label":"Req 79","title":"<b>Student</b><br>Search for an internship using internship title and company name<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"Search for an internship using internship title and company name","role":"Student","points":2,"notes":"No additional notes."},{"id":80,"label":"Req 80","title":"<b>Student</b><br>Filter internships by company name and duration<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"Filter internships by company name and duration","role":"Student","points":2,"notes":"No additional notes."},{"id":81,"label":"Req 81","title":"<b>Student</b><br>View a list of internships based on the search/ filteration<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"View a list of internships based on the search/ filteration","role":"Student","points":2,"notes":"No additional notes."},{"id":82,"label":"Req 82","title":"<b>Student</b><br>Sort internships based on date of posting the internship<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"Sort internships based on date of posting the internship","role":"Student","points":2,"notes":"No additional notes."},{"id":83,"label":"Req 83","title":"<b>Student</b><br>View and select an internship from the search/filteration results<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"View and select an internship from the search/filteration results","role":"Student","points":2,"notes":"No additional notes."},{"id":84,"label":"Req 84","title":"<b>Student</b><br>Apply for an internship and write a short cover letter on why I think I fit the role<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"Apply for an internship and write a short cover letter on why I think I fit the role","role":"Student","points":2,"notes":"No additional notes."},{"id":85,"label":"Req 85","title":"<b>Employer</b><br>View a list of my internships offered by my company<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"View a list of my internships offered by my company","role":"Employer","points":2,"notes":"No additional notes."},{"id":86,"label":"Req 86","title":"<b>Employer</b><br>Select an internship from the list of internships<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Select an internship from the list of internships","role":"Employer","points":2,"notes":"No additional notes."},{"id":87,"label":"Req 87","title":"<b>Employer</b><br>View a list of the students that have applied for that internship<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"View a list of the students that have applied for that internship","role":"Employer","points":2,"notes":"No additional notes."},{"id":88,"label":"Req 88","title":"<b>Employer</b><br>Select a status of each applicant (nominated, accepted or rejected)<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#74b9ff","group":"Employer","person":"Basel","description":"Select a status of each applicant (nominated, accepted or rejected)","role":"Employer","points":2,"notes":"Nominated: being considered for the role. Accepted: Final acceptance for the role. Rejected: ma3lesh. "},{"id":89,"label":"Req 89","title":"<b>Student</b><br>Receive a notification once I am accepted or reject for an internship I applied for<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"Receive a notification once I am accepted or reject for an internship I applied for","role":"Student","points":2,"notes":"No additional notes."},{"id":90,"label":"Req 90","title":"<b>Student</b><br>View a list of all the internships I have completed as part of my portfolio<br><b>Assigned:</b> Basel<br><b>Points:</b> 2","color":"#55efc4","group":"Student","person":"Basel","description":"View a list of all the internships I have completed as part of my portfolio","role":"Student","points":2,"notes":"This is done automatically once a student completes an internship"},{"id":91,"label":"Req 91","title":"<b>Student/ Employer/ Course Instructor</b><br>Turn off all notifications<br><b>Assigned:</b> Adham<br><b>Points:</b> 3","color":"#74b9ff","group":"Employer","person":"Adham","description":"Turn off all notifications","role":"Student/ Employer/ Course Instructor","points":3,"notes":"No additional notes."}],"edges":[{"from":2,"to":1},{"from":3,"to":1},{"from":1,"to":4},{"from":1,"to":5},{"from":1,"to":6},{"from":56,"to":7},{"from":6,"to":7},{"from":1,"to":8},{"from":8,"to":9},{"from":1,"to":10},{"from":10,"to":11},{"from":1,"to":12},{"from":10,"to":13},{"from":1,"to":14},{"from":14,"to":15},{"from":13,"to":16},{"from":15,"to":16},{"from":16,"to":17},{"from":15,"to":18},{"from":5,"to":19},{"from":19,"to":20},{"from":19,"to":21},{"from":21,"to":22},{"from":19,"to":23},{"from":23,"to":24},{"from":19,"to":25},{"from":25,"to":26},{"from":26,"to":27},{"from":26,"to":28},{"from":28,"to":29},{"from":29,"to":30},{"from":27,"to":31},{"from":19,"to":32},{"from":32,"to":33},{"from":33,"to":34},{"from":1,"to":35},{"from":35,"to":36},{"from":33,"to":37},{"from":21,"to":38},{"from":38,"to":39},{"from":37,"to":40},{"from":38,"to":40},{"from":37,"to":41},{"from":38,"to":41},{"from":1,"to":42},{"from":42,"to":43},{"from":42,"to":44},{"from":42,"to":45},{"from":44,"to":46},{"from":1,"to":47},{"from":47,"to":48},{"from":47,"to":49},{"from":47,"to":50},{"from":49,"to":51},{"from":1,"to":52},{"from":52,"to":53},{"from":52,"to":54},{"from":1,"to":55},{"from":55,"to":56},{"from":7,"to":57},{"from":7,"to":58},{"from":46,"to":59},{"from":59,"to":60},{"from":60,"to":61},{"from":59,"to":62},{"from":61,"to":63},{"from":63,"to":64},{"from":51,"to":65},{"from":46,"to":65},{"from":65,"to":66},{"from":66,"to":67},{"from":70,"to":68},{"from":51,"to":69},{"from":46,"to":69},{"from":87,"to":69},{"from":69,"to":70},{"from":85,"to":71},{"from":21,"to":72},{"from":56,"to":73},{"from":52,"to":73},{"from":10,"to":74},{"from":87,"to":75},{"from":66,"to":76},{"from":87,"to":76},{"from":86,"to":77},{"from":86,"to":78},{"from":5,"to":79},{"from":79,"to":80},{"from":79,"to":81},{"from":79,"to":82},{"from":81,"to":83},{"from":83,"to":84},{"from":74,"to":85},{"from":85,"to":86},{"from":86,"to":87},{"from":87,"to":88},{"from":88,"to":89},{"from":89,"to":90},{"from":35,"to":91}]};
+
+        function initNetwork() {
+            const container = document.getElementById('mynetwork');
+            nodes.add(graphData.nodes);
+            edges.add(graphData.edges);
+
+            const data = { nodes, edges };
+            const options = {
+                nodes: { shape: 'dot', size: 20, font: { size: 14, color: '#2f3640' }, borderWidth: 2, shadow: true },
+                edges: { arrows: 'to', color: '#dcdde1', width: 2, smooth: { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.4 } },
+                physics: { stabilization: true, barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 150, springConstant: 0.04, damping: 0.09, avoidOverlap: 0.1 } },
+                groups: { Admin: { color: '#ff7675' }, Employer: { color: '#74b9ff' }, Student: { color: '#55efc4' }, Instructor: { color: '#ffeaa7' }, General: { color: '#dfe6e9' } }
+            };
+
+            network = new vis.Network(container, data, options);
+            network.on("click", (params) => { if (params.nodes.length > 0) selectNode(params.nodes[0]); });
+            updateUI();
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+            const personFilter = document.getElementById('filter-person').value;
+            const moduleFilter = document.getElementById('filter-module').value;
+
+            const listContainer = document.getElementById('req-list');
+            listContainer.innerHTML = '';
+
+            let visibleNodes = [];
+            let totalPoints = 0;
+            let donePoints = 0;
+            
+            const memberStats = {
+                "Omar": { done: 0, total: 0, tasks: [] },
+                "Basel": { done: 0, total: 0, tasks: [] },
+                "Yousef": { done: 0, total: 0, tasks: [] },
+                "Omar Fo2sh": { done: 0, total: 0, tasks: [] },
+                "Adham": { done: 0, total: 0, tasks: [] }
+            };
+
+            let pathNodes = new Set();
+            if (pathTargetId !== null) {
+                pathNodes = getPathNodes(1, pathTargetId);
+                if (pathNodes.size === 0 && pathTargetId !== 1) {
+                    pathNodes = getPathNodes(pathTargetId, 1);
+                    if (pathNodes.size === 0) pathNodes.add(pathTargetId);
+                } else if (pathTargetId === 1) {
+                    pathNodes.add(1);
+                }
+            }
+
+            graphData.nodes.forEach(node => {
+                const isDone = doneTasks.has(node.id);
+                let isNext = false;
+                if (!isDone) {
+                    const prereqs = graphData.edges.filter(e => e.to === node.id).map(e => e.from);
+                    isNext = prereqs.every(p => doneTasks.has(p));
+                }
+                const points = node.points || 0;
+                totalPoints += points;
+                if (isDone) donePoints += points;
+                
+                if (memberStats[node.person]) {
+                    memberStats[node.person].total += points;
+                    memberStats[node.person].tasks.push({ ...node, isDone });
+                    if (isDone) memberStats[node.person].done += points;
+                }
+
+                const matchSearch = node.description.toLowerCase().includes(searchTerm) || node.id.toString() === searchTerm;
+                const matchStatus = statusFilter === 'all' || (statusFilter === 'done' && isDone) || (statusFilter === 'remaining' && !isDone) || (statusFilter === 'complete_with_next' && (isDone || isNext));
+                const matchPerson = personFilter === 'all' || node.person === personFilter;
+                const matchModule = moduleFilter === 'all' || node.group === moduleFilter;
+
+                let isVisible = false;
+                if (pathTargetId !== null) {
+                    isVisible = pathNodes.has(node.id);
+                } else {
+                    isVisible = matchSearch && matchStatus && matchPerson && matchModule;
+                }
+
+                if (isVisible) {
+                    visibleNodes.push(node.id);
+                    const card = document.createElement('div');
+                    card.className = `req-card ${isDone ? 'done' : ''} ${currentSelectedId === node.id ? 'active' : ''} ${isNext && statusFilter === 'complete_with_next' && !isDone ? 'next-req' : ''}`;
+                    if (isNext && statusFilter === 'complete_with_next' && !isDone) {
+                        card.style.borderLeft = '4px solid #f39c12';
+                        card.style.background = '#fef9e7';
+                    }
+                    card.onclick = () => selectNode(node.id);
+                    card.innerHTML = `
+                        <h4>Req ${node.id} [${points} pts] ${isDone ? '✅' : (isNext && statusFilter === 'complete_with_next' ? '⏳ (Next)' : '')}</h4>
+                        <p>${node.description}</p>
+                        <div class="meta"><span>${node.person}</span><span>${node.group}</span></div>
+                    `;
+                    listContainer.appendChild(card);
+                }
+            });
+
+            const tbody = document.getElementById('prog-table-body');
+            tbody.innerHTML = '';
+            for (const [name, stats] of Object.entries(memberStats)) {
+                const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+                const remaining = stats.total - stats.done;
+                const safeName = name.replace(/\s+/g, '-');
+                
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => toggleDetails(safeName);
+                row.innerHTML = `
+                    <td style="font-weight: bold;">
+                        <span id="btn-${safeName}" class="expand-btn">▶</span>
+                        ${name} ${name === 'Omar' ? '(Lead)' : ''}
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="member-bar-container"><div class="member-bar" style="width: ${percent}%"></div></div>
+                            <span style="font-size: 0.8rem;">${percent}%</span>
+                        </div>
+                    </td>
+                    <td style="color: var(--success); font-weight: bold;">${stats.done}</td>
+                    <td>${stats.total}</td>
+                    <td style="color: var(--danger); font-weight: bold;">${remaining}</td>
+                `;
+                tbody.appendChild(row);
+
+                const detailRow = document.createElement('tr');
+                detailRow.id = `details-${safeName}`;
+                detailRow.className = 'task-details-row';
+                const taskItems = stats.tasks.map(t => `
+                    <div class="mini-task-item ${t.isDone ? 'done' : ''}">
+                        <span class="status-icon">${t.isDone ? '✅' : '⏳'}</span>
+                        <div>
+                            <div style="font-weight:bold;">Req ${t.id}</div>
+                            <div style="font-size:0.7rem; color:#888;">${t.description.substring(0, 40)}...</div>
+                        </div>
+                    </div>
+                `).join('');
+                detailRow.innerHTML = `<td colspan="5"><div class="task-list-mini">${taskItems}</div></td>`;
+                tbody.appendChild(detailRow);
+            }
+
+            nodes.forEach(node => {
+                const isVisible = visibleNodes.includes(node.id);
+                const glow = searchTerm && node.description.toLowerCase().includes(searchTerm);
+                nodes.update({ 
+                    id: node.id, 
+                    hidden: !isVisible, 
+                    label: `Req ${node.id} ${doneTasks.has(node.id) ? '✅' : ''}`,
+                    shadow: glow ? { enabled: true, color: 'rgba(52, 152, 219, 0.8)', size: 15 } : { enabled: true }
+                });
+            });
+
+            const totalPercent = totalPoints > 0 ? Math.round((donePoints / totalPoints) * 100) : 0;
+            document.getElementById('progress-bar').style.width = totalPercent + '%';
+            document.getElementById('progress-text').innerText = totalPercent + '%';
+        }
+
+        function updateUI() { applyFilters(); }
+
+        function switchView(view) {
+            document.getElementById('mynetwork').style.display = view === 'graph' ? 'block' : 'none';
+            document.getElementById('progression-view').style.display = view === 'prog' ? 'block' : 'none';
+            document.getElementById('btn-graph').className = `btn btn-outline ${view === 'graph' ? 'active' : ''}`;
+            document.getElementById('btn-prog').className = `btn btn-outline ${view === 'prog' ? 'active' : ''}`;
+        }
+
+        function toggleDetails(name) {
+            const row = document.getElementById(`details-${name}`);
+            const btn = document.getElementById(`btn-${name}`);
+            if(row) row.classList.toggle('active');
+            if(btn) btn.classList.toggle('active');
+        }
+
+        function selectNode(id) {
+            currentSelectedId = id;
+            network.selectNodes([id]);
+            network.focus(id, { scale: 1.0, animation: true });
+            const node = graphData.nodes.find(n => n.id === id);
+            document.getElementById('detail-view').style.display = 'block';
+            document.getElementById('view-id').innerText = `Req ${id} [${node.points} pts]`;
+            document.getElementById('view-desc').innerText = node.description;
+            document.getElementById('view-meta').innerText = `${node.role} | Assigned to ${node.person}`;
+            document.getElementById('view-notes').innerText = node.notes || "No additional notes.";
+            const isDone = doneTasks.has(id);
+            document.getElementById('toggle-btn').innerText = isDone ? "Mark Remaining" : "Mark Complete";
+            document.getElementById('toggle-btn').className = isDone ? "btn btn-danger" : "btn btn-success";
+
+            const pathBtn = document.getElementById('path-btn');
+            if (pathTargetId === id) {
+                pathBtn.innerText = "Clear Path View";
+                pathBtn.className = "btn btn-outline active";
+            } else {
+                pathBtn.innerText = "Show Path from Req 1";
+                pathBtn.className = "btn btn-primary";
+            }
+
+            updateUI();
+        }
+
+        function toggleCurrent() {
+            if (currentSelectedId === null) return;
+            if (doneTasks.has(currentSelectedId)) doneTasks.delete(currentSelectedId);
+            else doneTasks.add(currentSelectedId);
+            localStorage.setItem('polaris_done', JSON.stringify(Array.from(doneTasks)));
+            selectNode(currentSelectedId);
+        }
+
+        function copySyncCode() {
+            const code = btoa(JSON.stringify(Array.from(doneTasks)));
+            document.getElementById('sync-code').value = code;
+            navigator.clipboard.writeText(code);
+            alert("Sync code copied to clipboard!");
+        }
+
+        function loadSyncCode() {
+            const code = document.getElementById('sync-code').value;
+            try {
+                const data = JSON.parse(atob(code));
+                doneTasks = new Set(data);
+                localStorage.setItem('polaris_done', JSON.stringify(data));
+                updateUI();
+                alert("Progress synced successfully!");
+            } catch(e) { alert("Invalid sync code!"); }
+        }
+
+        window.onload = initNetwork;
+    </script>
+</body>
+</html>
