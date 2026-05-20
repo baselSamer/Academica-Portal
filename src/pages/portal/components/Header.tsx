@@ -67,7 +67,6 @@ export default function Header() {
   else if (user?.role === 'Administrator') rolePath = 'administrator'
   else if (user?.role === 'Employer') rolePath = 'employer'
 
-  const isAdmin = user?.role === 'Administrator'
 
   const pageNameMap: Record<string, string> = {
     '/portal/student': 'Dashboard',

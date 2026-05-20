@@ -101,6 +101,7 @@ export interface Message {
   content: string
   timestamp: string
   read: boolean
+  conversationId?: string
 }
 
 export interface Conversation {

@@ -90,7 +90,7 @@ export default function AppealReviewList({ appeals, onAcceptAppeal, onRejectAppe
         onConfirm={() => {
           if (!pendingAction) return
           if (pendingAction.action === 'accept') {
-            onAcceptAppeal(pendingAction.appeal.id)
+            onAcceptAppeal(pendingAction.appeal.id, pendingAction.appeal.projectId)
           } else {
             onRejectAppeal(pendingAction.appeal.id)
           }

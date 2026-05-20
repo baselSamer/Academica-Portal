@@ -37,9 +37,9 @@ export default function useFavorites(currentUserId = '') {
   const isFavorite = (id: string) => favorites.some(f => f.id === id)
 
   const dummyRecommended: FavoriteItem[] = [
-    { id: 'rec-1', type: 'project', title: 'Smart Library System', subtitle: 'Databases • Khaled Youssef', tags: ['Java', 'MySQL', 'Spring Boot'], rating: 4.7, savedAt: '' },
-    { id: 'rec-2', type: 'project', title: 'Blockchain Voting App', subtitle: 'Distributed Systems • Layla Ahmed', tags: ['Solidity', 'React', 'Ethereum'], rating: 4.9, savedAt: '' },
-    { id: 'rec-3', type: 'project', title: 'Healthcare Dashboard', subtitle: 'Data Science • Mostafa Ali', tags: ['Python', 'D3.js', 'Flask'], rating: 4.4, savedAt: '' },
+    { id: 'rec-1', userId: currentUserId, type: 'project', title: 'Smart Library System', subtitle: 'Databases • Khaled Youssef', tags: ['Java', 'MySQL', 'Spring Boot'], rating: 4.7, savedAt: '' },
+    { id: 'rec-2', userId: currentUserId, type: 'project', title: 'Blockchain Voting App', subtitle: 'Distributed Systems • Layla Ahmed', tags: ['Solidity', 'React', 'Ethereum'], rating: 4.9, savedAt: '' },
+    { id: 'rec-3', userId: currentUserId, type: 'project', title: 'Healthcare Dashboard', subtitle: 'Data Science • Mostafa Ali', tags: ['Python', 'D3.js', 'Flask'], rating: 4.4, savedAt: '' },
   ]
 
   return {

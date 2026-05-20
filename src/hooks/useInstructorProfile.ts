@@ -139,7 +139,7 @@ export function useInstructorProfile(username?: string) {
   const updateProfilePicture = useCallback((pictureUrl: string | null) => updateProfile({ profilePicture: pictureUrl }), [updateProfile])
 
   return {
-    profile,
+    profile: profile || sharedProfile,
     updateProfile,
     updateBiography,
     updateEducationBackground,

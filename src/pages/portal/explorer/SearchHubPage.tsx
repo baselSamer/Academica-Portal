@@ -101,13 +101,13 @@ export default function SearchHubPage(): React.JSX.Element {
 
   const handleTogglePortfolioFavorite = (portfolio: ReturnType<typeof usePortfolioSearch>['portfolios'][number]) => {
     if (isFavorite(portfolio.studentId)) {
-      removeFavorite(portfolio.studentId, user.username)
+      removeFavorite(portfolio.studentId, user?.username || '')
       return
     }
 
     addFavorite({
       id: portfolio.studentId,
-      userId: user.username,
+      userId: user?.username || '',
       type: 'portfolio',
       title: portfolio.name,
       subtitle: `${portfolio.major} - ${portfolio.projectCount} Projects`,

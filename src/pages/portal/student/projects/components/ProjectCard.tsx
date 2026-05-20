@@ -21,7 +21,7 @@ import FlagReasonBanner from './FlagReasonBanner';
 interface ProjectCardProps {
     id: string;
     title: string;
-    course: string;
+    course?: string;
     languages: string[];
     rating?: number;
     isPublic?: boolean;

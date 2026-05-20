@@ -137,7 +137,7 @@ function RoleUserCard({ role, username }: { role: UserRole | undefined; username
 /**
  * Sidebar — persistent sidebar navigation with role-based tabs, user profile, and logout.
  */
-export default function Sidebar(): React.JSX.Element {
+export default function Sidebar() {
     const { user, logout } = useGlobalContext()
     const navigate = useNavigate()
     const location = useLocation()

@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { type User } from '../scripts/useUsers'
+import { type AdminUser } from '../scripts/useUsers'
 import ConfirmationDialog from '../../../../../components/ConfirmationDialog'
 
 interface UserDataTableProps {
-  users: User[]
+  users: AdminUser[]
   onToggleStatus: (userId: string) => void
 }
 
 export default function UserDataTable({ users, onToggleStatus }: UserDataTableProps) {
-  const [pendingToggle, setPendingToggle] = useState<User | null>(null)
+  const [pendingToggle, setPendingToggle] = useState<AdminUser | null>(null)
   
   const getRoleBadgeClasses = (role: string) => {
     switch (role) {

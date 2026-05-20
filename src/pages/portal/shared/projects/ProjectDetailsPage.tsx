@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 import useStudentProjects from '../../student/projects/scripts/useStudentProjects'
 import useCourses from '../../../../hooks/useCourses'
 import { useGlobalContext } from '../../../../globalContext'
@@ -14,7 +14,7 @@ import Button from '../../../../components/Button'
 import FeedbackDialog from '../../../../components/FeedbackDialog'
 import ConfirmDialog from '../../../../components/ConfirmDialog'
 import ProjectTaskSection from './components/ProjectTaskSection'
-import type { RootState } from '../../../../store'
+import type { RootState as _RootState } from '../../../../store'
 
 /**
  * FlagModal — handles the reasoning for flagging a project.
@@ -88,7 +88,7 @@ function AppealModal({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose:
  * ProjectDetailsPage — displays full project details, report, and media.
  * Covers Req 46 (Select and view project with details).
  */
-export default function ProjectDetailsPage(): React.JSX.Element {
+export default function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -101,7 +101,6 @@ export default function ProjectDetailsPage(): React.JSX.Element {
   const { startConversation } = useMessages()
 
   const [project, setProject] = useState<any>(null)
-  const [backOrigin, setBackOrigin] = useState<string | null>(null)
   const [backLabel, setBackLabel] = useState<string | null>(null)
   const [isFlagModalOpen, setIsFlagModalOpen] = useState(false)
   const [isAppealModalOpen, setIsAppealModalOpen] = useState(false)
@@ -160,7 +159,8 @@ export default function ProjectDetailsPage(): React.JSX.Element {
 
   useEffect(() => {
     if (!localStorage.getItem('polaris_back_label')) {
-      const rolePath = user?.role === 'Course Instructor' ? 'instructor' : user?.role === 'Administrator' ? 'administrator' : user?.role === 'Employer' ? 'employer' : 'student'
+      const _rolePath = user?.role === 'Course Instructor' ? 'instructor' : user?.role === 'Administrator' ? 'administrator' : user?.role === 'Employer' ? 'employer' : 'student'
+      void _rolePath
       let newLabel = 'Go Back'
       if (location.pathname.includes('/student/projects/')) newLabel = 'Back to My Projects'
       else if (location.pathname.includes('/student/profile')) newLabel = 'Back to Profile'
@@ -171,7 +171,6 @@ export default function ProjectDetailsPage(): React.JSX.Element {
       localStorage.setItem('polaris_back_label', newLabel)
     }
     setBackLabel(localStorage.getItem('polaris_back_label'))
-    setBackOrigin(location.pathname)
   }, [id, location.pathname, user])
 
   const handleBack = () => {
@@ -181,11 +180,11 @@ export default function ProjectDetailsPage(): React.JSX.Element {
   const handleToggleFavorite = () => {
     if (!project) return
     if (isFavorite(project.id)) {
-      removeFavorite(project.id)
+      removeFavorite(project.id, user?.username || '')
     } else {
       addFavorite({
         id: project.id,
-        userId: user.username,
+        userId: user?.username || '',
         type: 'project',
         title: project.title,
         subtitle: `${getCourseById(project.course)?.name ?? 'Independent'} • ${collaborators.find(c => c.role === 'owner')?.name || 'Project Owner'}`,

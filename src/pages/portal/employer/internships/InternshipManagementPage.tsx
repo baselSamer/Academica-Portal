@@ -11,7 +11,7 @@ import type { Internship } from '../../../../types'
  *
  * Covers Req 74 (CRUD), 77 (hiring status), 78 (archive), 85 (view list), 86 (select internship).
  */
-export default function InternshipManagementPage(): React.JSX.Element {
+export default function InternshipManagementPage() {
   const navigate = useNavigate()
   const { activeInternships, archivedInternships, addInternship, updateInternship, deleteInternship, toggleStatus, toggleArchive } = useInternships()
   const { studentsPlaced } = useEmployerStats()
@@ -33,12 +33,6 @@ export default function InternshipManagementPage(): React.JSX.Element {
     applicationDeadline: '', programmingLanguages: '', status: 'Hiring'
   })
 
-  const formatDateInput = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = `${date.getMonth() + 1}`.padStart(2, '0')
-    const day = `${date.getDate()}`.padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
 
   const parseDateInput = (value: string): Date => {
     const [year, month, day] = value.split('-').map(Number)
@@ -57,7 +51,8 @@ export default function InternshipManagementPage(): React.JSX.Element {
       setDeadlineError('Deadline is required.')
       return
     }
-    const selectedDeadline = parseDateInput(form.applicationDeadline)
+    const _selectedDeadline = parseDateInput(form.applicationDeadline)
+    void _selectedDeadline
     if (!form.applicationDeadline) {
       setDeadlineError('Deadline is required.')
       return

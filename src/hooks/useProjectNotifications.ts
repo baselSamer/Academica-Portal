@@ -27,7 +27,6 @@ export function useProjectNotifications() {
   const allNotifs = useSelector((state: RootState) => state.database.notifications)
   const userId = user?.username || 'me'
   const adminUsernames = ['admin@polaris.edu.eg', 'admin@guc.edu.eg']
-  const isAnyAdmin = user?.role === 'Administrator' || adminUsernames.includes(userId)
 
   const invitationNotifications = useMemo(
     () => allNotifs.filter((n: any) => {

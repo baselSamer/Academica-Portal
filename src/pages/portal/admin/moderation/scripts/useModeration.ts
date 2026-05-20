@@ -56,7 +56,7 @@ export function useModeration() {
     }))
   }, [appeals])
 
-  const toggleProjectStatus = (id: string, activate: boolean) => {
+  const toggleProjectStatus = (_id: string, _activate: boolean) => {
     // Status changes are reflected in Redux already
   }
 

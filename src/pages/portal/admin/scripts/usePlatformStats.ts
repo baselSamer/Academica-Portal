@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import type { RootState } from '../../../store'
+import type { RootState } from '../../../../store'
 
 export function usePlatformStats() {
   const users = useSelector((state: RootState) => state.database.users)

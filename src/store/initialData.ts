@@ -1,4 +1,4 @@
-﻿import type { 
+import type { 
   ProjectCollaborator, 
   TaskFeedback, 
   ProjectFeedback, 
@@ -10,7 +10,17 @@
   InstructorProfile,
   StudentPortfolio,
   UserRole,
-  LinkRequest
+  LinkRequest,
+  CourseLink,
+  CompletedInternship,
+  ProjectInvitation,
+  FlaggedProject,
+  ProjectAppeal,
+  EmployerStats,
+  FavoriteItem,
+  Message,
+  Conversation,
+  Notification as AppNotification
 } from '../types';
 
 export interface ProjectTask {
@@ -72,7 +82,7 @@ export interface DatabaseState {
   favorites: FavoriteItem[];
   messages: Message[];
   conversations: Conversation[];
-  notifications: Notification[];
+  notifications: AppNotification[];
   users: { username: string; role: UserRole; password: string }[];
 }
 

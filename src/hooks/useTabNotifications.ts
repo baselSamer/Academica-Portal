@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { useGlobalContext } from '../globalContext'
 import type { RootState } from '../store'
+import type { Notification as AppNotification } from '../types'
 
 export interface TabNotifications {
   invitations: number
@@ -22,14 +23,10 @@ export function useTabNotifications(): TabNotifications {
   const notificationsMuted = false
 
   const userId = user?.username || 'me'
-  const rolePath = user?.role === 'Course Instructor' ? 'instructor'
-    : user?.role === 'Administrator' ? 'administrator'
-    : user?.role === 'Employer' ? 'employer'
-    : 'student'
 
   const isAdministrator = user?.role === 'Administrator'
 
-  const userNotifications = useMemo(() => notifications.filter((n) => {
+  const userNotifications = useMemo(() => notifications.filter((n: AppNotification) => {
     if (isAdministrator && (n.type === 'admin' || n.type === 'link_request')) return true
     if (n.recipientId === userId) return true
     if (!n.recipientId) return true

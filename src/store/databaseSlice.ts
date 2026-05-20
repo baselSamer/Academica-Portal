@@ -11,7 +11,8 @@ import type {
   CompanyProfile,
   InstructorProfile,
   StudentPortfolio,
-  UserRole
+  UserRole,
+  Notification as AppNotification
 } from '../types';
 
 const databaseSlice = createSlice({
@@ -26,18 +27,18 @@ const databaseSlice = createSlice({
 
     // ── Notifications ──────────────────────────────────────────────────────
     toggleNotificationRead: (state, action: PayloadAction<string>) => {
-      const notif = state.notifications.find(n => n.id === action.payload);
+      const notif = (state.notifications as AppNotification[]).find(n => n.id === action.payload);
       if (notif) {
         notif.read = !notif.read;
       }
     },
 
     markNotificationsAllRead: state => {
-      state.notifications.forEach(n => { n.read = true; });
+      (state.notifications as AppNotification[]).forEach(n => { n.read = true; });
     },
 
     markInvitationsAllRead: (state) => {
-      for (const n of state.notifications) {
+      for (const n of (state.notifications as AppNotification[])) {
         if (n.type === 'project_invitation') {
           n.read = true;
         }
@@ -45,7 +46,7 @@ const databaseSlice = createSlice({
     },
 
     markInternshipsAllRead: (state) => {
-      for (const n of state.notifications) {
+      for (const n of (state.notifications as AppNotification[])) {
         if (n.type === 'internship_status') {
           n.read = true;
         }
@@ -53,7 +54,7 @@ const databaseSlice = createSlice({
     },
 
     markProjectsAllRead: (state) => {
-      for (const n of state.notifications) {
+      for (const n of (state.notifications as AppNotification[])) {
         if (n.type === 'feedback' || n.type === 'flag' || n.type === 'appeal_response') {
           n.read = true;
         }
@@ -61,7 +62,7 @@ const databaseSlice = createSlice({
     },
 
     markProjectNotifications: (state, action: PayloadAction<string>) => {
-      for (const n of state.notifications) {
+      for (const n of (state.notifications as AppNotification[])) {
         if ((n.type === 'feedback' || n.type === 'flag' || n.type === 'appeal_response') && (n as any).projectId === action.payload) {
           n.read = true;
         }
@@ -70,19 +71,19 @@ const databaseSlice = createSlice({
 
     addNotification: (
       state,
-      action: PayloadAction<Omit<DatabaseState['notifications'][number], 'id' | 'timestamp' | 'read'>>
+      action: PayloadAction<Omit<AppNotification, 'id' | 'timestamp' | 'read'>>
     ) => {
-      const newNotif = {
+      const newNotif: AppNotification = {
         ...action.payload,
         id: `notif-${Date.now()}`,
         timestamp: new Date().toISOString(),
         read: false,
       };
-      state.notifications.unshift(newNotif);
+      (state.notifications as AppNotification[]).unshift(newNotif);
     },
 
     removeNotification: (state, action: PayloadAction<string>) => {
-      state.notifications = state.notifications.filter(n => n.id !== action.payload);
+      state.notifications = (state.notifications as AppNotification[]).filter(n => n.id !== action.payload) as any;
     },
 
     // ── Favorites ──────────────────────────────────────────────────────────
@@ -312,7 +313,7 @@ const databaseSlice = createSlice({
         existing.linkedAt = new Date().toISOString();
       } else {
         state.courseLinks.push({
-          instructorId, courseId, status: 'linked', linkedAt: new Date().toISOString(),
+          instructorId, courseId, status: 'linked', direction: 'link', linkedAt: new Date().toISOString(),
         });
       }
     },
@@ -549,9 +550,7 @@ const databaseSlice = createSlice({
       if (!existing) {
         state.companies.push({
           ...action.payload,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        })
+        } as any)
       }
     },
   }

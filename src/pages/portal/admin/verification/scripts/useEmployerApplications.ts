@@ -13,7 +13,6 @@ export interface EmployerApplication {
   bio: string
   address: string
   documentUrl: string
-  logoUrl?: string
   documents?: Array<{ id: string; name: string; type: string; size: number; uploadedAt: string }>
   phone?: string
   logoUrl?: string
@@ -35,8 +34,7 @@ export function useEmployerApplications() {
       documentUrl: c.documents?.[0]?.name || '',
       logoUrl: c.logoUrl || '',
       documents: c.documents,
-      phone: c.phone,
-      logoUrl: c.logoUrl
+      phone: c.phone
     }))
   }, [companies])
 

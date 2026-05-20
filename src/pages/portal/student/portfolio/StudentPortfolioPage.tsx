@@ -25,7 +25,7 @@ const PORTFOLIO_SECTIONS: PortfolioSection[] = [
  * Displays portfolio information with tabs for profile, skills, and contact details.
  * Allows users to add, view, update, and remove portfolio information.
  */
-export default function StudentPortfolioPage(): React.JSX.Element {
+export default function StudentPortfolioPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const { user } = useGlobalContext()
@@ -135,12 +135,12 @@ export default function StudentPortfolioPage(): React.JSX.Element {
 
 const handleToggleFavorite = (): void => {
     if (isFavorite(targetId)) {
-      removeFavorite(targetId, user.username)
+      removeFavorite(targetId, user?.username || '')
       return
     }
     addFavorite({
       id: targetId,
-      userId: user.username,
+      userId: user?.username || '',
       type: 'portfolio',
       title: portfolio.name,
       subtitle: `${portfolio.major} - ${portfolio.projectCount} Projects`,

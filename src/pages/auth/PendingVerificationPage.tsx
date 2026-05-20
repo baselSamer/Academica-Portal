@@ -4,7 +4,7 @@ import { useGlobalContext } from '../../globalContext'
 import Button from '../../components/Button'
 
 export default function PendingVerificationPage() {
-  const { user, logout } = useGlobalContext()
+  const { logout } = useGlobalContext()
   const navigate = useNavigate()
   const [uploading, setUploading] = useState(false)
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([])

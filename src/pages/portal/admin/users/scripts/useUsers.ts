@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { updateDatabase, registerUser } from '../../../../../store/databaseSlice'
+import { registerUser } from '../../../../../store/databaseSlice'
 import type { RootState } from '../../../../../store'
 import type { UserRole } from '../../../../../types'
 
@@ -32,12 +32,6 @@ const roleToLabelMap: Record<string, string> = {
   Administrator: 'Admin'
 }
 
-function getUserEmail(role: string, username: string): string {
-  if (role === 'Administrator') return `admin@polaris.edu.eg`
-  if (role === 'Employer') return username
-  if (role === 'Course Instructor') return username
-  return username
-}
 
 export function useUsers() {
   const dispatch = useDispatch()

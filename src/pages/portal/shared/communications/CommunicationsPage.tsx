@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import useMessages from '../../../../hooks/useMessages'
 import { useGlobalContext } from '../../../../globalContext'
-import type { UserRole } from '../../../../types'
+import type { Conversation, UserRole } from '../../../../types'
 
 /**
  * CommunicationsPage — premium messaging interface for direct communication.
  * Focused on a modern, integrated feel rather than a separate window app.
  * Covers Req 68, 69, 70.
  */
-export default function CommunicationsPage(): React.JSX.Element {
+export default function CommunicationsPage() {
   const { conversations, activeConversation, activeMessages, sendMessage, selectConversation, totalUnread } = useMessages()
   const { user } = useGlobalContext()
   const [msgInput, setMsgInput] = useState('')
@@ -63,7 +63,7 @@ export default function CommunicationsPage(): React.JSX.Element {
               <p className="text-sm font-lexend text-on-surface-variant">No active conversations</p>
             </div>
           ) : (
-            conversations.map(c => (
+            conversations.map((c: Conversation & { _otherParticipant?: { name: string; avatar: string; role?: string } }) => (
               <button
                 key={c.id}
                 onClick={() => selectConversation(c.id)}

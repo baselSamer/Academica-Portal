@@ -36,7 +36,7 @@ export function useLinkRequests() {
         courseName: course?.name || 'Unknown',
         courseCode: course?.code || 'Unknown',
         type: link.direction || (link.status === 'pending' ? 'link' : 'unlink'),
-        status: link.status === 'pending' ? 'pending' : link.status === 'linked' ? 'accepted' : 'rejected',
+        status: (link.status === 'pending' ? 'pending' : link.status === 'linked' ? 'accepted' : 'rejected') as 'pending' | 'accepted' | 'rejected',
         date: link.linkedAt?.split('T')[0] || '',
         projectId: undefined,
         projectTitle: undefined,
